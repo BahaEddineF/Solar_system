@@ -50,46 +50,52 @@ jobs:
         run: npm install 
 
       # 🧪 Lance les tests unitaires
-      - name: Unit Testing               
+      - name: Unit Testing  
+        id: nodejs-unit-test-step             
         run: npm test
 
       # 📤 Archive le fichier de résultats des tests
-      - name: Archive Test result        
+      - name: Archive Test result 
+        if: steps.nodejs-unit-test-step.outcome == 'failure' || steps.nodejs-unit-test-step.outcome == 'success'    
         uses: actions/upload-artifact@v4
         with:
             name: Mocha-Test-Result-${{ matrix.nodejs_version }}-${{ matrix.os }}
             path: test-results.xml 
  
-  code-coverage:
-    name: Code-coverage
-    runs-on: ubuntu-latest
-    steps:
+  code-coverage:                         # 🧪 Job : Analyse de la couverture de code
+   name: Code-coverage
+   runs-on: ubuntu-latest              # 🖥️ Utilise une machine Ubuntu
+
+   steps:
+    # 📥 Récupère le code du dépôt
     - name: checkout repo    
       uses: actions/checkout@v4
 
-      # 🔧 Configure Node.js avec la version choisie
+    # 🔧 Configure Node.js version 18
     - name: Setup NodeJs Version - 18
       uses: actions/setup-node@v3
       with:
         node-version: 18
 
-      # 📦 Installe les dépendances avec npm
+    # 📦 Installe les dépendances avec npm
     - name: Install Dependencies       
       run: npm install 
 
-      # 🧪 Lance les tests unitaires
+    # 🧪 Lance les tests unitaires
     - name: Unit Testing               
       run: npm test
 
+    # ✅ Lance la commande de couverture de code
     - name: Check code coverage
-      continue-on-error: true
+      continue-on-error: true         # Ne bloque pas le workflow si cette étape échoue
       run: npm run coverage
 
-      # 📤 Archive le fichier de résultats des tests
+    # 📤 Archive le dossier de couverture (ex: HTML report)
     - name: Archive Test result        
       uses: actions/upload-artifact@v4
       with:
-            name: Code-Coverage-Result
-            path: coverage
-            retention-days: 5
+        name: Code-Coverage-Result
+        path: coverage
+        retention-days: 5
+
 
