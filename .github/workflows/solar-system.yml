@@ -29,3 +29,10 @@ jobs:
 
     - name: Unit Testing               # 🧪 Lance les tests unitaires
       run: npm test
+
+    - name: Archive Test result              # 🧪 Lance les tests unitaires
+      uses: actions/upload-artifact@v3
+      with:
+        name: Test-action-result
+        path: test-result.xml 
+
