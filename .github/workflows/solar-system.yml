@@ -53,14 +53,23 @@ jobs:
       - name: Unit Testing  
         id: nodejs-unit-test-step             
         run: npm test
-
-      # 📤 Archive les résultats de test (succès ou échec)
+        
+        # 📤 Archive les résultats de test ( succces ou échec)
       - name: Archive Test result 
-        if: failure() && (steps.nodejs-unit-test-step.outcome == 'failure' || steps.nodejs-unit-test-step.outcome == 'success' )  
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: Mocha-Test-Result-${{ matrix.nodejs_version }}-${{ matrix.os }}
           path: test-results.xml 
+
+
+    #   # 📤 Archive les résultats de test ( échec)
+    #   - name: Archive Test result 
+    #     if: failure() && (steps.nodejs-unit-test-step.outcome == 'failure' || steps.nodejs-unit-test-step.outcome == 'success' )  
+    #     uses: actions/upload-artifact@v4
+    #     with:
+    #       name: Mocha-Test-Result-${{ matrix.nodejs_version }}-${{ matrix.os }}
+    #       path: test-results.xml 
 
 
   # 🧪 Job : Couverture de code
