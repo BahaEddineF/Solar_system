@@ -95,7 +95,7 @@ jobs:
 # 🐳 JOB 3: Build and test Docker image
   docker:
     name: Containerization
-    needs: [unit-testing, code-coverage]   # Wait for previous 2 jobs to finish
+    needs: [unit-testing, code-coverage]
     runs-on: ubuntu-latest
 
     steps:
@@ -113,47 +113,39 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}    
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 🛠️ Build Docker image (no push)
+      - name: 🛠️ Build (no push)
         uses: docker/build-push-action@v4
         with:
           context: .
           push: false
           tags: ${{ vars.DOCKERHUB_USERNAME }}/solar-system:${{ github.sha }}
 
-      - name: 🧪 Test the Docker image
+      - name: 🧪 Test Docker image
         run: |
-          docker images   # Show local Docker images
-
-          # Run the app container
           docker run --name solar-system-app -d \
-              -p 3000:3000 \
-              -e MONGO_USERNAME=$MONGO_USERNAME \
-              -e MONGO_PASSWORD=$MONGO_PASSWORD \
-              ${{ vars.DOCKERHUB_USERNAME }}/solar-system:${{ github.sha }}
+            -p 3000:3000 \
+            -e MONGO_USERNAME=$MONGO_USERNAME \
+            -e MONGO_PASSWORD=$MONGO_PASSWORD \
+            ${{ vars.DOCKERHUB_USERNAME }}/solar-system:${{ github.sha }}
 
-          # Get the container internal IP
-          export IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' solar-system-app)
-          echo "Container IP: $IP"
-
-          # Test if app responds at /live
-          echo "🌐 Testing /live endpoint"
           wget -q -O - http://127.0.0.1:3000/live | grep live
 
-      - name: 🛠️ Container Registry Push
+      - name: 🛠️ Push to DockerHub
         uses: docker/build-push-action@v4
         with:
-            context: .
-            push: true
-            tags: |
-                ${{ vars.DOCKERHUB_USERNAME }}/solar-system:${{ github.sha }}
-                ghcr.io/${{ github.repository_owner }}/solar-system:latest
+          context: .
+          push: true
+          tags: |
+            ${{ vars.DOCKERHUB_USERNAME }}/solar-system:${{ github.sha }}
+            ${{ vars.DOCKERHUB_USERNAME }}/solar-system:latest
 
-
-      # - name: 🛠️ Push Docker image to DockerHub
-      #   uses: docker/build-push-action@v4
-      #   with:
-      #     context: .
-      #     push: true
-      #     tags: ${{ vars.DOCKERHUB_USERNAME }}/solar-system:${{ github.sha }}
+      - name: 🛠️ Push to GitHub Container Registry (GHCR)
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/solar-system:${{ github.sha }}
+            ghcr.io/${{ github.repository_owner }}/solar-system:latest
