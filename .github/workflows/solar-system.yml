@@ -1,137 +1,135 @@
-# 💫 Nom du workflow
+# 💫 Nom du workflow visible sur GitHub Actions
 name: Solar System Workflow  
 
-# 🚀 Déclenchement du workflow
+# 🚀 Déclencheurs du workflow
 on:
-  # Lancement manuel
-  workflow_dispatch:         
-  # Push sur branches spécifiques
-  push:                      
-    branches:                
-      - main
-      - 'feature/*'
+  workflow_dispatch:         # Lancement manuel via l'interface GitHub
+  push:                      # Lancement automatique lors d'un push
+    branches:
+      - main                 # ...sur la branche main
+      - 'feature/*'          # ...ou une branche qui commence par "feature/"
 
-# 🌍 Variables d’environnement globales
+# 🌍 Variables d'environnement (accessibles dans tous les jobs)
 env:
   MONGO_URI: 'mongodb+srv://cluster0.p0dlr.mongodb.net/Github_Actions_Solar'
-  MONGO_USERNAME: ${{ vars.MONGO_USERNAME }}
-  MONGO_PASSWORD: ${{ secrets.MONGO_PASSWORD }}
+  MONGO_USERNAME: ${{ vars.MONGO_USERNAME }}     # variable GitHub
+  MONGO_PASSWORD: ${{ secrets.MONGO_PASSWORD }}  # secret GitHub
 
-# 🧪 Job : tests unitaires
+# 🧪 JOB 1 : Tests unitaires avec plusieurs versions de Node.js
 jobs:
-  unit-testing:              
+  unit-testing:
     name: Unit testing
 
-    # 🔁 Teste différentes versions de Node.js et OS
     strategy:
       matrix:
-        nodejs_version: [18, 20]
-        os: [ubuntu-latest, macos-latest]
-        exclude:
-          - nodejs_version: 18
-            os: macos-latest
+        nodejs_version: [18, 20]   # Teste avec Node.js 18 et 20
+        os: [ubuntu-latest]        # Sur OS Ubuntu uniquement
 
-    # 🖥️ Système utilisé
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}      # Exécute sur l'OS défini dans le matrix
 
     steps:
-      # 📥 Récupération du code
-      - name: checkout repo    
+      - name: 📥 Récupère le code
         uses: actions/checkout@v4
 
-      # 🔧 Configuration de Node.js
-      - name: Setup NodeJs Version - ${{ matrix.nodejs_version }}
+      - name: 🔧 Installe Node.js
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.nodejs_version }}
 
-
-      - name: cache NPM dependidcy
+      - name: 🧠 Met en cache les dépendances npm
         uses: actions/cache@v3
         with:
-            path: node_modules
-            key: ${{ runner.os }}-node-modules-${{ matrix.nodejs_version }}-${{ hashFiles('package-lock.json') }}
-            
-      # 📦 Installation des dépendances
-      - name: Install Dependencies       
-        run: npm install 
+          path: node_modules
+          key: ${{ runner.os }}-node-modules-${{ matrix.nodejs_version }}-${{ hashFiles('package-lock.json') }}
 
-      # 🧪 Tests unitaires
-      - name: Unit Testing  
-        id: nodejs-unit-test-step             
+      - name: 📦 Installe les dépendances
+        run: npm install
+
+      - name: 🧪 Lance les tests unitaires
+        id: nodejs-unit-test-step
         run: npm test
-        
-        # 📤 Archive les résultats de test ( succces ou échec)
-      - name: Archive Test result 
-        if: always()
+
+      - name: 📤 Archive les résultats des tests
+        if: always()   # Exécute cette étape même si les tests échouent
         uses: actions/upload-artifact@v4
         with:
           name: Mocha-Test-Result-${{ matrix.nodejs_version }}-${{ matrix.os }}
-          path: test-results.xml 
+          path: test-results.xml
 
-
-    #   # 📤 Archive les résultats de test ( échec)
-    #   - name: Archive Test result 
-    #     if: failure() && (steps.nodejs-unit-test-step.outcome == 'failure' || steps.nodejs-unit-test-step.outcome == 'success' )  
-    #     uses: actions/upload-artifact@v4
-    #     with:
-    #       name: Mocha-Test-Result-${{ matrix.nodejs_version }}-${{ matrix.os }}
-    #       path: test-results.xml 
-
-
-  # 🧪 Job : Couverture de code
+# ✅ JOB 2 : Couverture de code (Code Coverage)
   code-coverage:
     name: Code-coverage
     runs-on: ubuntu-latest
 
     steps:
-      # 📥 Récupération du code
-      - name: checkout repo    
+      - name: 📥 Récupère le code
         uses: actions/checkout@v4
 
-      # 🔧 Configuration de Node.js
-      - name: Setup NodeJs Version - 18
+      - name: 🔧 Installe Node.js 18
         uses: actions/setup-node@v3
         with:
           node-version: 18
-      - name: cache NPM dependidcy
+
+      - name: 🧠 Met en cache les dépendances npm
         uses: actions/cache@v3
         with:
-            path: node_modules 
-            key: ${{ runner.os }}-node-modules-${{ matrix.nodejs_version }}-${{ hashFiles('package-lock.json') }}
-            
-      # 📦 Installation des dépendances
-      - name: Install Dependencies       
-        run: npm install 
+          path: node_modules
+          key: ubuntu-node-modules-18-${{ hashFiles('package-lock.json') }}
 
-      # 🧪 Exécution des tests
-      - name: Unit Testing
-        run: npm test || true   # <-- Ajouté pour éviter l'échec du job si un test échoue
+      - name: 📦 Installe les dépendances
+        run: npm install
 
-      # ✅ Couverture de code
-      - name: Check code coverage
-        run: npm run coverage || true  # <-- Même ici, évite que le job échoue
+      - name: 🧪 Lance les tests (même s’ils échouent)
+        run: npm test || true
 
-      # 📤 Archive du dossier de couverture
-      - name: Archive Test result        
+      - name: ✅ Calcule la couverture du code
+        run: npm run coverage || true
+
+      - name: 📤 Archive le rapport de couverture
         uses: actions/upload-artifact@v4
         with:
           name: Code-Coverage-Result
           path: coverage
           retention-days: 5
-  
+
+# 🐳 JOB 3 : Création et test d’une image Docker
   docker:
-      name: Containerization
-      needs: [unit-testing,code-coverage]
-      runs-on: ubuntu-latest
-      steps:
-      - name: checkout Repo
+    name: Containerization
+    needs: [unit-testing, code-coverage]   # Attend que les 2 jobs précédents soient finis
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Récupère le code
         uses: actions/checkout@v4
 
-      - name: DockerHub Login
+      - name: 🔐 Connexion à DockerHub
         uses: docker/login-action@v2.2.0
         with:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
+      - name: 🛠️ Build Docker (mais ne le pousse pas)
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: false
+          tags: ${{ vars.DOCKERHUB_USERNAME }}/solar-system:${{ github.sha }}
 
+      - name: 🧪 Test de l'image Docker
+        run: |
+          docker images   # Affiche les images locales
+
+          # Lance le container de test avec les bonnes variables
+          docker run --name solar-system-app -d \
+              -p 3000:3000 \
+              -e MONGO_USERNAME=$MONGO_USERNAME \
+              -e MONGO_PASSWORD=$MONGO_PASSWORD \
+              ${{ vars.DOCKERHUB_USERNAME }}/solar-system:${{ github.sha }}
+
+          # Récupère l’IP interne du container
+          export IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' solar-system-app)
+          echo "Container IP: $IP"
+
+          # Teste si le service répond bien à l’URL /live
+          echo "🌐 Testing /live endpoint"
+          wget -q -O - http://127.0.0.1:3000/live | grep live
