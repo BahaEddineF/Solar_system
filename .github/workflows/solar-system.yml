@@ -19,7 +19,15 @@ env:
 jobs:
   unit-testing:
     name: Unit testing
-
+    services:
+      mongo-db:
+        image: bdockerfatnassi/mongo-db:non-prod
+        ports:
+          - 27017:27017
+    env:
+      MONGO_URI: 'mongodb://localhost:27017/Github_Actions_Solar'
+      MONGO_USERNAME: non-prod-user
+      MONGO_PASSWORD: non-prod-password 
     strategy:
       matrix:
         nodejs_version: [18, 20]   # Test with Node.js versions 18 and 20
