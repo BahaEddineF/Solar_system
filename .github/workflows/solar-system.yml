@@ -62,7 +62,8 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      MONGO_URI: 'mongodb://non-prod-user:non-prod-password@localhost:27017/Github_Actions_Solar'
+      env:
+      MONGO_URI: 'mongodb://non-prod-user:non-prod-password@mongo-db:27017/Github_Actions_Solar'
       MONGO_USERNAME: non-prod-user
       MONGO_PASSWORD: non-prod-password
 
