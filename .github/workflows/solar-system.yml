@@ -6,36 +6,71 @@ on:
   workflow_dispatch:         # Manual trigger from GitHub UI
   push:                      # Automatic trigger when pushing code
     branches:
-      - main                 # On the main branch
-      - 'feature/*'          # Or any branch starting with "feature/"
-
-# 🌍 Global environment variables (available for all jobs)
-env:
-  MONGO_URI: 'mongodb+srv://cluster0.p0dlr.mongodb.net/Github_Actions_Solar'
-  MONGO_USERNAME: ${{ vars.MONGO_USERNAME }}     # GitHub variable
-  MONGO_PASSWORD: ${{ secrets.MONGO_PASSWORD }}  # GitHub secret
+      - main
+      - 'feature/*'
 
 # 🧪 JOB 1: Unit testing using multiple Node.js versions
 jobs:
   unit-testing:
     name: Unit testing
+    runs-on: ubuntu-latest
+
+    container:
+      image: node:${{ matrix.nodejs_version }}
+
     services:
       mongo-db:
         image: bdockerfatnassi/mongo-db:non-prod
         ports:
           - 27017:27017
 
+    strategy:
+      matrix:
+        nodejs_version: [18, 20]
+
     env:
-      MONGO_URI: 'mongodb://non-prod-user:non-prod-password@mongo-db:27017/Github_Actions_Solar'
+      MONGO_URI: 'mongodb://non-prod-user:non-prod-password@localhost:27017/Github_Actions_Solar'
       MONGO_USERNAME: non-prod-user
       MONGO_PASSWORD: non-prod-password
 
-    strategy:
-      matrix:
-        nodejs_version: [18, 20]   # Test with Node.js versions 18 and 20
-        os: [ubuntu-latest]        # Only run on Ubuntu
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
 
-    runs-on: ${{ matrix.os }}      # Use OS defined in matrix
+      - name: 🧠 Cache npm dependencies
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ matrix.nodejs_version }}-${{ hashFiles('package-lock.json') }}
+
+      - name: 📦 Install dependencies
+        run: npm install
+
+      - name: 🧪 Run unit tests
+        run: npm test
+
+      - name: 📤 Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mocha-Test-Result-${{ matrix.nodejs_version }}-${{ runner.os }}
+          path: test-results.xml
+
+  # ✅ JOB 2: Code coverage
+  code-coverage:
+    name: Code coverage
+    runs-on: ubuntu-latest
+
+    env:
+      MONGO_URI: 'mongodb://non-prod-user:non-prod-password@localhost:27017/Github_Actions_Solar'
+      MONGO_USERNAME: non-prod-user
+      MONGO_PASSWORD: non-prod-password
+
+    services:
+      mongo-db:
+        image: bdockerfatnassi/mongo-db:non-prod
+        ports:
+          - 27017:27017
 
     steps:
       - name: 📥 Checkout code
@@ -44,47 +79,13 @@ jobs:
       - name: 🔧 Install Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: ${{ matrix.nodejs_version }}
-
-      - name: 🧠 Cache npm dependencies
-        uses: actions/cache@v3
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-node-modules-${{ matrix.nodejs_version }}-${{ hashFiles('package-lock.json') }}
-
-      - name: 📦 Install dependencies
-        run: npm install
-
-      - name: 🧪 Run unit tests
-        id: nodejs-unit-test-step
-        run: npm test
-
-      - name: 📤 Upload test results
-        if: always()   # Run this step even if tests fail
-        uses: actions/upload-artifact@v4
-        with:
-          name: Mocha-Test-Result-${{ matrix.nodejs_version }}-${{ matrix.os }}
-          path: test-results.xml
-
-# ✅ JOB 2: Code coverage calculation
-  code-coverage:
-    name: Code-coverage
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-
-      - name: 🔧 Install Node.js 18
-        uses: actions/setup-node@v3
-        with:
           node-version: 18
 
       - name: 🧠 Cache npm dependencies
         uses: actions/cache@v3
         with:
           path: node_modules
-          key: ubuntu-node-modules-18-${{ hashFiles('package-lock.json') }}
+          key: ubuntu-node-18-${{ hashFiles('package-lock.json') }}
 
       - name: 📦 Install dependencies
         run: npm install
@@ -102,13 +103,15 @@ jobs:
           path: coverage
           retention-days: 5
 
-# 🐳 JOB 3: Build and test Docker image
+  # 🐳 JOB 3: Build and test Docker image
   docker:
     name: Containerization
     needs: [unit-testing, code-coverage]
-    permissions:
-      packages: write
     runs-on: ubuntu-latest
+
+    env:
+      MONGO_USERNAME: non-prod-user
+      MONGO_PASSWORD: non-prod-password
 
     steps:
       - name: 📥 Checkout code
@@ -161,4 +164,3 @@ jobs:
           tags: |
             ghcr.io/bahaeddinef/solar-system:${{ github.sha }}
             ghcr.io/bahaeddinef/solar-system:latest
-
