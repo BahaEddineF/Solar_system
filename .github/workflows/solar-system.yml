@@ -58,42 +58,42 @@ jobs:
   # ✅ JOB 2: Code coverage
   code-coverage:
     name: Code coverage
-    runs-on: ubuntu-latest
-
-    env:
-      MONGO_URI: mongodb://non-prod-user:non-prod-password@mongo-db:27017/Github_Actions_Solar
-      MONGO_USERNAME: non-prod-user
-      MONGO_PASSWORD: non-prod-password
-
+    container:
+      image: node:18
     services:
       mongo-db:
-        image: bdockerfatnassi/mongo-db:non-prod
-        ports:
-          - 27017:27017
+        image: siddharth67/mongo-db:non-prod
+        options: --name mongo
+
+    env:
+      MONGO_URI: mongodb://mongo:27017/superData
+      MONGO_USERNAME: non-prod-user
+      MONGO_PASSWORD: non-prod-password  
+    runs-on: ubuntu-latest
 
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      - name: 🔧 Install Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
+      # - name: 🔧 Install Node.js
+      #   uses: actions/setup-node@v3
+      #   with:
+      #     node-version: 18
 
       - name: 🧠 Cache npm dependencies
         uses: actions/cache@v3
         with:
           path: node_modules
-          key: ubuntu-node-18-${{ hashFiles('package-lock.json') }}
+          key: ${{ runner.os}}-node-modules-${{ hashFiles('package-lock.json') }}
 
       - name: 📦 Install dependencies
         run: npm install
 
-      - name: 🧪 Run unit tests (don’t fail if error)
-        run: npm test || true
+      - name: 🧪 Run unit tests 
+        run: npm test 
 
-      - name: ✅ Run code coverage (don’t fail if error)
-        run: npm run coverage || true
+      - name: ✅ Run code coverage 
+        run: npm run coverage 
 
       - name: 📤 Upload coverage folder
         uses: actions/upload-artifact@v4
