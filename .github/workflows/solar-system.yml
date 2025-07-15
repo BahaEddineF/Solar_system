@@ -162,5 +162,5 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/${{ github.actor }}/solar-system:${{ env.SHA_TAG }}
-            ghcr.io/${{ github.actor }}/solar-system:latest
+            ghcr.io/bahaeddinef/solar-system:${{ github.sha }}
+            ghcr.io/bahaeddinef/solar-system:latest '
