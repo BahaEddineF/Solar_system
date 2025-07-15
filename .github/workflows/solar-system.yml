@@ -170,6 +170,7 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/solar-system:${{ env.SHA_TAG }}
-            ghcr.io/${{ github.repository_owner }}/solar-system:latest
+            ghcr.io/bahaeddinef/solar-system:${{ github.sha }}
+            ghcr.io/bahaeddinef/solar-system:latest
+
 
