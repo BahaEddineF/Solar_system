@@ -21,18 +21,16 @@ jobs:
     services:
       mongo-db:
         image: siddharth67/mongo-db:non-prod
-        ports:
-          - 27017:27017
+        options:
+          --name mongo
+    env:
+        MONGO_URI: 'mongodb://mongo:27017/superData'
+        MONGO_USERNAME: non-prod-user
+        MONGO_PASSWORD: non-prod-password
 
     strategy:
       matrix:
         nodejs_version: [18, 20]
-
-    env:
-      env:
-      MONGO_URI: 'mongodb://non-prod-user:non-prod-password@mongo-db:27017/Github_Actions_Solar?authSource=Github_Actions_Solar'
-      MONGO_USERNAME: non-prod-user
-      MONGO_PASSWORD: non-prod-password
 
     steps:
       - name: 📥 Checkout code
