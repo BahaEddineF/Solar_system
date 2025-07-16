@@ -9,6 +9,11 @@ on:
       - main
       - 'feature/*'
 
+env:
+    MONGO_URI: ${{ vars.MONGO_URI }}
+    MONGO_USERNAME: ${{ vars.MONGO_USERNAME }}
+    MONGO_PASSWORD: ${{ secrets.MONGO_PASSWORD }}
+
 jobs:
   # 🧪 JOB 1: Unit testing using multiple Node.js versions
   unit-testing:
@@ -169,4 +174,20 @@ jobs:
             ghcr.io/bahaeddinef/solar-system:${{ github.sha }}
             ghcr.io/bahaeddinef/solar-system:latest
 
+  dev-deploy:
+    needs: docker
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
 
+      - name: install Kubectl CLI
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'v1.26.0' 
+   
+      - name: Fetch Kubernetes Cluster Details
+        run : | 
+          kubeclt version --short
+          echo ----------------------------------
+          kubectl get nodes
